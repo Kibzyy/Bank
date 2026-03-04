@@ -10,18 +10,22 @@ interface UserData {
   accountNumber: string
 }
 
+interface Account {
+  id: number
+  account_number: string
+  account_type: string
+  balance: string | number
+  created_at: string
+}
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userData, setUserData] = useState<UserData | null>(null)
   const [view, setView] = useState<'banking' | 'database'>('banking')
-  const [accounts, setAccounts] = useState<any[]>([])
-  const [accountNumber, setAccountNumber] = useState('')
+  const [accounts, setAccounts] = useState<Account[]>([])
   const [balance, setBalance] = useState<number | null>(null)
-  const [depositAccountNumber, setDepositAccountNumber] = useState('')
   const [depositAmount, setDepositAmount] = useState('')
-  const [withdrawAccountNumber, setWithdrawAccountNumber] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
-  const [transferFrom, setTransferFrom] = useState('')
   const [transferTo, setTransferTo] = useState('')
   const [transferAmount, setTransferAmount] = useState('')
   const [message, setMessage] = useState('')
@@ -40,34 +44,38 @@ export default function App() {
     setUserData(user)
     setIsAuthenticated(true)
     setMessage('')
+    // Fetch initial balance on login
+    fetchBalance(user.accountNumber)
   }
 
   const handleLogout = () => {
     setIsAuthenticated(false)
     setUserData(null)
     setView('banking')
-    setAccountNumber('')
     setBalance(null)
-    setDepositAccountNumber('')
     setDepositAmount('')
-    setWithdrawAccountNumber('')
     setWithdrawAmount('')
-    setTransferFrom('')
     setTransferTo('')
     setTransferAmount('')
     setMessage('')
   }
 
-  const handleGetBalance = async () => {
-    if (!accountNumber.trim()) {
-      setMessage('Please enter account number')
-      return
+  const fetchBalance = async (accNum: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/${accNum}/balance`)
+      setBalance(response.data.balance)
+    } catch (error) {
+      console.error('Error fetching balance:', error)
     }
+  }
+
+  const handleGetBalance = async () => {
+    if (!userData) return
     setLoading(true)
     try {
-      const response = await axios.get(`${API_URL}/${accountNumber}/balance`)
+      const response = await axios.get(`${API_URL}/${userData.accountNumber}/balance`)
       setBalance(response.data.balance)
-      setMessage(`Balance for account ${accountNumber}: $${response.data.balance}`)
+      setMessage(`Current balance: $${response.data.balance}`)
     } catch (error: unknown) {
       const errorMsg = axios.isAxiosError(error) ? error.response?.data?.error : 'Unknown error'
       setMessage(`Error: ${errorMsg}`)
@@ -77,18 +85,17 @@ export default function App() {
   }
 
   const handleDeposit = async () => {
-    if (!depositAccountNumber.trim() || !depositAmount.trim()) {
-      setMessage('Please enter account number and amount')
+    if (!userData || !depositAmount.trim()) {
+      setMessage('Please enter amount')
       return
     }
     setLoading(true)
     try {
-      const response = await axios.post(`${API_URL}/${depositAccountNumber}/deposit`, {
+      const response = await axios.post(`${API_URL}/${userData.accountNumber}/deposit`, {
         amount: parseFloat(depositAmount)
       })
       setBalance(response.data.balance)
       setMessage(`Deposit successful! New balance: $${response.data.balance}`)
-      setDepositAccountNumber('')
       setDepositAmount('')
     } catch (error: unknown) {
       const errorMsg = axios.isAxiosError(error) ? error.response?.data?.error : 'Unknown error'
@@ -98,18 +105,17 @@ export default function App() {
   }
 
   const handleWithdraw = async () => {
-    if (!withdrawAccountNumber.trim() || !withdrawAmount.trim()) {
-      setMessage('Please enter account number and amount')
+    if (!userData || !withdrawAmount.trim()) {
+      setMessage('Please enter amount')
       return
     }
     setLoading(true)
     try {
-      const response = await axios.post(`${API_URL}/${withdrawAccountNumber}/withdraw`, {
+      const response = await axios.post(`${API_URL}/${userData.accountNumber}/withdraw`, {
         amount: parseFloat(withdrawAmount)
       })
       setBalance(response.data.balance)
       setMessage(`Withdrawal successful! New balance: $${response.data.balance}`)
-      setWithdrawAccountNumber('')
       setWithdrawAmount('')
     } catch (error: unknown) {
       const errorMsg = axios.isAxiosError(error) ? error.response?.data?.error : 'Unknown error'
@@ -119,19 +125,19 @@ export default function App() {
   }
 
   const handleTransfer = async () => {
-    if (!transferFrom.trim() || !transferTo.trim() || !transferAmount.trim()) {
+    if (!userData || !transferTo.trim() || !transferAmount.trim()) {
       setMessage('Please fill in all transfer fields')
       return
     }
     setLoading(true)
     try {
       const response = await axios.post(`${API_URL}/transfer`, {
-        fromAccount: transferFrom,
+        fromAccount: userData.accountNumber,
         toAccount: transferTo,
         amount: parseFloat(transferAmount)
       })
-      setMessage(`Transfer successful! From: $${response.data.fromAccount.balance}, To: $${response.data.toAccount.balance}`)
-      setTransferFrom('')
+      setMessage(`Transfer successful! Your new balance: $${response.data.fromAccount.balance}`)
+      setBalance(response.data.fromAccount.balance)
       setTransferTo('')
       setTransferAmount('')
     } catch (error: unknown) {
@@ -164,33 +170,27 @@ export default function App() {
       {view === 'banking' ? (
         <>
           <div className="section">
-            <h2>Check Balance</h2>
-            <div className="form-group">
-              <input
-                type="text"
-                placeholder="Account Number"
-                value={accountNumber}
-                onChange={(e) => setAccountNumber(e.target.value)}
-              />
-              <button onClick={handleGetBalance} disabled={loading}>
-                {loading ? 'Loading...' : 'Check Balance'}
+            <h2>Your Current Balance</h2>
+            <div className="balance-display">
+              {balance !== null ? (
+                <div className="balance-amount" style={{ fontSize: '24px', fontWeight: 'bold', color: '#764ba2', margin: '10px 0' }}>
+                  ${balance.toFixed(2)}
+                </div>
+              ) : (
+                <p>Loading balance...</p>
+              )}
+              <button onClick={handleGetBalance} disabled={loading} style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer' }}>
+                {loading ? 'Refreshing...' : 'Refresh Balance'}
               </button>
             </div>
-            {balance !== null && <p className="result">Current Balance: ${balance.toFixed(2)}</p>}
           </div>
 
           <div className="section">
             <h2>Deposit</h2>
             <div className="form-group">
               <input
-                type="text"
-                placeholder="Account Number"
-                value={depositAccountNumber}
-                onChange={(e) => setDepositAccountNumber(e.target.value)}
-              />
-              <input
                 type="number"
-                placeholder="Amount"
+                placeholder="Amount to Deposit"
                 value={depositAmount}
                 onChange={(e) => setDepositAmount(e.target.value)}
               />
@@ -204,14 +204,8 @@ export default function App() {
             <h2>Withdraw</h2>
             <div className="form-group">
               <input
-                type="text"
-                placeholder="Account Number"
-                value={withdrawAccountNumber}
-                onChange={(e) => setWithdrawAccountNumber(e.target.value)}
-              />
-              <input
                 type="number"
-                placeholder="Amount"
+                placeholder="Amount to Withdraw"
                 value={withdrawAmount}
                 onChange={(e) => setWithdrawAmount(e.target.value)}
               />
@@ -222,23 +216,17 @@ export default function App() {
           </div>
 
           <div className="section">
-            <h2>Transfer</h2>
+            <h2>Transfer Funds</h2>
             <div className="form-group">
               <input
                 type="text"
-                placeholder="From Account"
-                value={transferFrom}
-                onChange={(e) => setTransferFrom(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="To Account"
+                placeholder="Recipient Account Number"
                 value={transferTo}
                 onChange={(e) => setTransferTo(e.target.value)}
               />
               <input
                 type="number"
-                placeholder="Amount"
+                placeholder="Amount to Transfer"
                 value={transferAmount}
                 onChange={(e) => setTransferAmount(e.target.value)}
               />
@@ -265,7 +253,7 @@ export default function App() {
                 <tr key={acc.id}>
                   <td>{acc.account_number}</td>
                   <td>{acc.account_type}</td>
-                  <td>${parseFloat(acc.balance).toFixed(2)}</td>
+                  <td>${Number(acc.balance).toFixed(2)}</td>
                   <td>{new Date(acc.created_at).toLocaleString()}</td>
                 </tr>
               ))}
