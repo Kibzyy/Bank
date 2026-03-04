@@ -39,11 +39,72 @@ body {
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 2px solid #eee;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-buttons button {
+  padding: 8px 16px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-buttons button:hover {
+  background: #e2e8f0;
+}
+
+.nav-buttons button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
 }
 
 .header h1 {
   color: #333;
   font-size: 28px;
+}
+
+.db-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.db-table th, .db-table td {
+  padding: 12px 8px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.db-table th {
+  background-color: #f8f9fa;
+  color: #666;
+  font-weight: 600;
+}
+
+.db-table tr:hover {
+  background-color: #fcfcfc;
+}
+
+.message {
+  padding: 15px;
+  background-color: #f0f7ff;
+  border-left: 4px solid #667eea;
+  color: #444;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  text-align: center;
 }
 
 .user-info {

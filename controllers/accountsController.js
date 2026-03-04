@@ -266,4 +266,16 @@ const createAccount = async (req, res) => {
   }
 };
 
-module.exports = { getBalance, deposit, withdraw, transfer, createAccount };
+const getAllAccounts = async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, account_number, account_type, balance, created_at FROM accounts ORDER BY created_at DESC'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+module.exports = { getBalance, deposit, withdraw, transfer, createAccount, getAllAccounts };

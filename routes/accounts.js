@@ -6,7 +6,11 @@ const {
   withdraw,
   transfer,
   createAccount,
+  getAllAccounts,
 } = require("../controllers/accountsController");
+
+// GET / - Retrieve all accounts
+router.get("/", getAllAccounts);
 
 // POST /create - Create a new account
 router.post("/create", createAccount);
